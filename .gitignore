@@ -1,0 +1,4 @@
+*.tmp
+~$*
+*.synctex.gz
+/dev
