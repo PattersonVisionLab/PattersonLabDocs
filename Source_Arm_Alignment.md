@@ -27,7 +27,7 @@ _There are two options for source collimation documented below. The shear plate 
 _The WFS source (847 nm) is the furthest right and serves as the reference for positioning the other 3 sources. The other sources, from right to left, are the reflectance source (796 nm), the Toptica (488/561/640 nm - we usually use 561 nm for alignment), the Mustang (488 nm)._
 
 
-Set up the co-alignment camera system
+Set up the co-alignment camera system ([image](img/CoalignmentCamera.png))
 - Remove the partition between the PMTs and source arm.
 - Use two 1/4-20 bolts to mount the breadboard with the source alignment cage system (beamsplitter cube with two arms, one that has a lens and one that does not) to the optical table.
   - This can be mounted at the end of the table downstream from the removed magnetic mounted beam block.
@@ -81,3 +81,6 @@ Both the Mustang and Toptica have [AHWP10M-600](https://www.thorlabs.com/thorpro
 - Replace the cardboard partition between the source arm and the PMTs
 
 Next: [AOSLO System Alignment](AOSLO_Alignment.md)
+
+![Source coalignment camera rig](img/CoalignmentCamera.png)
+Coalignment camera set up, designed for breadboard to be attached directly to the optical table. Top row rods are in place for t-shirt alignment targets.

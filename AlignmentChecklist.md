@@ -15,5 +15,6 @@ Experiment-dependent protocols (if needed, must be updated after AOSLO alignment
 Infrequent protocols
 - [ ] Detection arm alignment
 - [ ] LED subsystem alignment
+- [ ] Marmoset stereotax base alignment
 - [ ] Spectrometer calibration
 

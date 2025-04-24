@@ -19,3 +19,6 @@ __When to perform:__ Any time the collection optics of the spectrometer change (
   - `089430516_HL-3 plus-CAL_bfw_20190130_VIS.lmp` or `089430516_HL-3 plus-CAL_cc_20190130_VIS.lmp`
 - Enter the fiber diameter (3900 microns for the cosine corrector, 400 microns for the bare fiber)
 - Save the calibration in the "Spectrometer files" folder with the date in the file name (e.g., "20241013")
+
+__See also:__ [OceanView Manual](resources/OceanViewManual.pdf)
+__Next:__ [LED Spectra and Gamma Calibration](LED_Spectra_Gamma_Calibration.md)

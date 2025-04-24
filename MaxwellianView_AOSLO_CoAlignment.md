@@ -1,7 +1,9 @@
 ## Maxwellian View Coalignment with AOSLO
 
-<font size="2"> __Last Updated:__ November 27, 2024
+<font size="2"> __Last Updated:__ April 21, 2024
 
+
+> _If the stimulus has uniform chromaticity before the pellicle but not after, get a new pellice ([ThorLabs BP208](https://www.thorlabs.com/thorproduct.cfm?partnumber=BP208))._
 
 ### Positioning the stimulus within the FOV
 This relies on a series of near/far-field alignments. We typically image on one side of the FOV and provide stimuli on the other side, so the goal is to place the stimulus to the left or right. Making the correct determination on stimulus position is easiest if you have a specific imaging region or stimulus/imaging layout in mind.
@@ -26,11 +28,10 @@ This relies on a series of near/far-field alignments. We typically image on one 
 
 
 ### Empirical confirmation of alignment during an experiment
-The stimulus should be fully covering the receptive fields of the RGCs being imaged. The problem with misalignment isn't just that some RGCs don't get the stimulus; it's that the edge of the stimulus moves across the retina with eye motion (even when paralyzed there's still some due to respiration) and that moving edge is a strong stimulus for RGCs. This is a confound that will require omitting large numbers of RGCs from analysis, so confirming alignment is good to do at the beginning of each experiment.
+
+The Maxwellian view spot should be fully covering the receptive fields of the RGCs being imaged. After alignments or in new imaging areas this sometimes doesn’t happen and requires some extra work to get right. The problem with having it off-center isn’t just that some ROIs don’t get the stimulus – it’s that the edge of the Maxwellian view spot moves across the retina with the residual eye movements and that’s a good stimulus for RGCs – you will need to omit all ROIs anywhere near the edge so mitigating this is good to get the most data.
 
 The stimulus position in the model eye should be a good reference (see pre-experiment optimization protocols), but absolutely needs to be confirmed after alignments, in new imaging regions or when using new FOV sizes. I check in the model eye before each experiment (usually identifies times when pellicle has been bumped) and while running basic stimuli as described below.
-
-When addressing misalignments in vivo, I wouldn't recommend adjusting mirror or the pellicle if you are aiming for publishable data as this will change your calibration. Instead adjust the pitch/rotation of the cart to move the imaging region towards ganglion cells with receptive fields. Anything more than small adjustments of the imaging region location indicates a larger problem that should be addressed offline.
 
 These steps use the custom `stimResponseMap.ijm` macro for ImageJ which can be found in my [imagej-tools](https://github.com/sarastokes/imagej-tools) repository.
 
@@ -39,10 +40,21 @@ These steps use the custom `stimResponseMap.ijm` macro for ImageJ which can be f
     - Register the video and drag it into ImageJ.
     - Run the ImageJ macro and use the dialog box to ensure the stimulus frames are correct (for the standard intensity increment, it should be 500-750 frames).
     - You should clearly see the responsive cells in the resulting onset map (almost all respond to this intensity increment in some way)
-2. __Fine alignment to fully center stimulus and remove edges.__
+<img src="img/pixelwise_increment.jpg" alt="Response to intensity change" width="250"/>
+1. __Fine alignment to fully center stimulus and remove edges.__
     - Run the "LightsOn" step stimulus which gives the cells time to adapt to a new light level. Then run the "Baseline" stimulus.
     - Drag the _unregistered_ fluorescence video into ImageJ
     - Run the ImageJ macro and set the stimulus frames to something like 500-1500.
+<img src="img/pixelwise_edge.jpg" alt="Response to stimulus edge" width="250"/>
+
+__Diagnosing misalignments by imaging the stimulus:__ If you find the stimulus position does not match that in the model eye, you can get some valuable information on what might be wrong (misalignment or are you just not hitting the RGCs' receptive fields) by trying to figure out where the stimulus actually is. To image the stimulus itself:
+  - Remove any NDFs, but leave the diffuser on if possible.
+  - Close the visible shutter and make sure "Manual Ctrl" is checked so the shutter doesn't open automatically when you start imaging.
+  - Record a 60 minute long video.
+  - Drag the unregistered video into ImageJ and calculate a Z-projection, choose the Standard Deviation option.
+  - If the stimulus is in the FOV, it should now be visible.
+
+__Quick fixes__: First adjust the pitch/rotation of the cart to attempt to better align the stimulus with the RGCs' receptive fields as this will not alter your calibration. Anything more than small adjustments of the FOV position indicates a larger problem that should be addressed offline. If you want to get some test data and are okay with alterations to the stimulus characteristics from the calibrated values, first try opening the aperture after the first flat mirror a little bit (too much and it will easily cover the full FOV). This often fixes the issue, but you may have some overlap between the stimulus and the imaging region and the amount of light will change. Adjusting mirror or the pellicle will change your calibration more significantly - we have done it before _in vivo_ by imaging the stimulus, but I wouldn't recommend it.
 
 </font>
 

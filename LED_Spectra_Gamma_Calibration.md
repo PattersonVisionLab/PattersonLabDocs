@@ -4,13 +4,12 @@
 
 __Last Updated:__ December 12, 2024
 
-__Warnings__:
-- _If you change anything about the collection optics of the spectrometer (e.g., take a cosine corrector on/off), you need to do the [Spectrometer Calibration](Spectrometer_Calibration.md) before continuing!_
-- _The streamlined procedure for measuring all 3 LEDs at once requires clean separation of each LED's spectral distribution. This is currently true but may change if the filters or LEDs are changed._
-- _If the stimulus has uniform chromaticity before the pellicle but not after, get a new pellice (ThorLabs [BP208](https://www.thorlabs.com/thorproduct.cfm?partnumber=BP208))._
+
+> _If you change anything about the collection optics of the spectrometer (e.g., take a cosine corrector on/off), you need to do the [Spectrometer Calibration](Spectrometer_Calibration.md) before continuing!_
+> _The streamlined procedure for measuring all 3 LEDs at once requires clean separation of each LED's spectral distribution. This is currently true but may change if the filters or LEDs are changed._
 
 ### Light source calibration
-_Goal is to measure both spectral distribution and the nonlinear relationship between input command (e.g., LED voltage) and the light source's output (power in uW) using the Ocean Optics STS-VIS._
+_Goal is to measure both spectral distribution and the nonlinear relationship between input command (e.g., LED voltage) and the light source's output (power in uW) using the [Ocean Optics ST-VIS](https://www.oceanoptics.com/spectrometer/st-vis/) spectrometer._
 - Check the spectrometer and ensure the cosine corrector is in place. If not, add the cosine corrector and complete the [Spectrometer Calibration](Spectrometer_Calibration.md).
 - Remove any NDFs, but keep the diffuser in place and turn the LEDs all the way up.
 - Start OceanView software on 1P AOSLO laptop and plug in the spectrometer.
@@ -42,41 +41,76 @@ _Calculating an "attenuation factor" for each LED which is the reduction in a li
 
 
 ### Adjusting the LED current limit
-_In general, we aim to utilize the full dynamic range of each LED by having them near 50% of their max output when showing an achromatic background. If one were at just 10% of their max output, all stimuli modulating around an achromatic background would be utilizing just a small portion of that LED's dynamic range. This isn't a huge issue because  command voltages to the LEDs are analog which mitigates the risk somewhat._
+_In general, we aim to utilize the full dynamic range of each LED by having them near 50% of their max output when showing an achromatic background. If one were at just 10% of their max output, all stimuli modulating around an achromatic background would be utilizing just a small portion of that LED's dynamic range._
 
 - Determine what % increase or decrease in maximum power is needed for the LED.
 - On the LED driver, turn the dial all the way up (5V) and switch the output mode to CW to keep it on without input from the PC.
 - Set up the model eye to do a power measurement of the  at the LED's peak wavelength.
   - Tip: You will need to see the optometer's output while standing next to the LEDs. After setting the wavelength, I usually rotate the box to face the side where the LED drivers are located, so I can look under the top table and see the output.
-- On one side of the LED driver is a potentiometer for adjusting the LED's current limit.
+- On one side of the LED driver is a potentiometer for adjusting the LED's current limit ([image](img/LEDD1B.png)).
 - Rotate a small (can't remember size off the top of my head) hex key until the optometer reads whatever % of the original power level was your target.
 - Remeasure the gamma ramp
 
 Beware: the green LED becomes _very_ nonlinear when set to the bottom of its range, so I usually keep it a bit higher, even if it means using less of the LED's dynamic range.
 
 ### Analysis
-This relies on the `GammaRampMeasurement` class in my [facile-tools](https://github.com/sarastokes/facile-tools) package on Github and the "Receptor Isolate Rochester" folder on Box.
+This step requires MATLAB with the Optimization Toolbox and Curve Fitting Toolbox and the following Github repository: [aoslo-calibration-tools](https://github.com/PattersonVisionLab/aoslo-calibration-tools)
 
-- Add the facile-tools package and Receptor Isolate Rochester (which contains Psychtoolbox) to your MATLAB search path.
+
+- Add the code to your search path and import the package (not necessary but reduces typing).
     ```matlab
-    addpath(genpath('..\facile-tools'));
-    addpath(genpath('..\Receptor Isolate Rochester'))
+    addpath(genpath('..\aoslo-calibration-tools'));
+    import pattersonlab.core.color.*;
     ```
 - Check out the class documentation for information
     ```matlab
-    doc GammaRampMeasurement
+    help pattersonlab.core.color.GammaRampMeasurement
     ```
 - For each LED, create a class to process each LED's response. The documentation explains each input, but briefly they are a name for the LED, the folder containing the calibrations, the voltages associated with each file and the date of the calibration. The min and max WL are used to set the range to include just one of the 3 LEDs:
     ```matlab
     blueLED = GammaRampMeasurement('420nm', '..\MySpectraFolder', 5:-0.1:0, 2, '20220422', ...
         'MinWL', 400, 'MaxWL', 450);
     % Check the results
-    blueLED.plotSpectra();
+    blueLED.plotSpectra('ShowCutoffs', true);
     blueLED.plotLUT(0:0.1:5);
     % Write the lookup table and normalized spectra
     blueLED.writeLUT('..\MySpectraFolder', 0:0.1:5);
     blueLED.writeSpectra('..\MySpectraFolder');
     ```
+- You may have outliers or slight noise in your LUT measurement. Consider fitting the data to either a linear function (works for red and blue LEDs) or a polynomial (works for green LED).
+    ```matlab
+    blueLED.setLutFitType('linear'); % other options: none, poly8
+    blueLED.plotLUT(0:0.1:5);
+    ```
+- Pass all 3 LEDs to the `pattersonlab.core.color.LedCalibration`
+  ```matlab
+  ledObj = LedCalibration([redLED, greenLED, blueLED]);
+  ```
+
+- Save as a JSON file for subsequent stimulus generation steps and to keep a record of the calibration in a non-proprietary file format. It will save to the `output` directory in the MATLAB calibration package and contains your LUTs, normalized spectra, and other parameters from the calibration calculations.
+    ```matlab
+    ledObj.exportToJSON();
+
+    % Later you can recreate the full LedCalibration object
+    ledObj = patterson.core.color.initFromJSON('LedSpectra_20220422_0ndf.json');
+    ```
+
+### Neutral density filters
+There are two options for incorporating NDFs. Measuring the full gamma ramp with a high NDF in place reduces the spectras' SNR considerably.
+
+##### Theoretical measurements
+The MATLAB code includes ThorLab's transmission spectra for the NDFs we most commonly use ([source](https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=266&pn=NE03A#811)). This will not be identical to the transmission spectra of the specific LED in our system, but it is close. For cone-isolating stimuli, I aim for empirical measurements instead.
+
+The code below is identical to what was used above, but with an OD 1.0 NDF specified.
+```matlab
+blueLED2 = GammaRampMeasurement('420nm', '..\MySpectraFolder', 5:-0.1:0, 2, '20220422', ...
+    'MinWL', 400, 'MaxWL', 450, 'NDF', 1);
+fprintf('Max power with NDF (%.3f) and without NDF(%.3f)\n',...
+    blueLED2.maxPower, blueLED.maxPower);
+```
+
+
+##### Empirical measurements
 - Repeat with the NDF-specific calibrations. I number each NDF spectra and make sure 0 corresponds to the measurement made when the LEDs were off/at 0 V.
     ```matlab
     % For example, 4 measurements where the first is 5V at 0 NDF,
@@ -95,16 +129,6 @@ This relies on the `GammaRampMeasurement` class in my [facile-tools](https://git
     writetable(LUT, '..\MySpectraFolder\LUT_420nm_20220422_10ndf.txt',...
         'Delimiter', '\t');
     ```
-- Update `ConeIsolation` to reflect the LUT and normalized spectra files produced in your calibration (`DEFAULT_LED_DIR`, `DEFAULT_LED_FILES`, `DEFAULT_LUT_FILES`). The property `DEFAULT_LED_POWERS` should be the values of the 3 LEDs at 5V in your LUT files. __The order of LEDs is always Red, Green, Blue__ (If you were to change the connectivity between the LEDs and the LED drivers numbered 1, 2, 3; you would need to change this order to reflect that).
-    ```matlab
-    obj = ConeIsolation();
-    ```
-- Check the "Background 1931 xy chromaticity" output and adjust `DEFAULT_BACKGROUND` (a value 0-1 to multiply each LED by to reach ~0.33, 0.33). You can rapidly iterate through values by using the optional `Bkgd` argument and setting `DEFAULT_BACKGROUND` once happy. If the LED weights required to :
-    ```matlab
-    obj = ConeIsolation('Bkgd', [0.5 0.5 0.5]);
-    ```
-- Save as a JSON file for subsequent stimulus generation steps.  It will save to your current directory (`cd`) and contain your LUTs, normalized spectra, and other parameters from the `ConeIsolation` class. I hope to improve the `ConeIsolation` routine at some point so am using the JSON file to decouple it from the steps that follow.
-    ```matlab
-    saveCalibrationFile(obj, 'LedCalibration20240422.json');
-    ```
 </font>
+
+__See also:__ [OceanView Manual](resources/OceanViewManual.pdf)
